@@ -1,0 +1,106 @@
+-- LocalScript do StarterGui
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- Pobieranie Character i HRP
+local function getChar()
+    local character = player.Character or player.CharacterAdded:Wait()
+    return character, character:WaitForChild("HumanoidRootPart")
+end
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GlideMenu"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 250)
+frame.Position = UDim2.new(0, 50, 0, 200)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+-- Nagłówek
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+title.Text = "Best Steal A Dexter Script"
+title.TextColor3 = Color3.fromRGB(255, 215, 0)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.Parent = frame
+
+-- Funkcja tworzenia przycisku
+local function makeButton(text, yPos, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, yPos)
+    btn.BackgroundColor3 = color or Color3.fromRGB(70, 70, 70)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Parent = frame
+    return btn
+end
+
+
+local saveBtn = makeButton("Save Location", 50)
+local glideBtn = makeButton("Glide to Location", 100)
+local forwardBtn = makeButton("Forward Teleport", 150)
+
+
+local savedPosition = nil
+local glideActive = false
+local glideSpeed = 65 
+
+
+local function blockControls(humanoid, state)
+    if state then
+        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    else
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
+
+saveBtn.MouseButton1Click:Connect(function()
+    local _, hrp = getChar()
+    savedPosition = hrp.Position
+    print("Zapisano pozycję:", savedPosition)
+end)
+
+glideBtn.MouseButton1Click:Connect(function()
+    if not savedPosition then
+        warn("Najpierw zapisz pozycję!")
+        return
+    end
+    if glideActive then return end
+    glideActive = true
+
+    local character, hrp = getChar()
+    local humanoid = character:WaitForChild("Humanoid")
+
+    blockControls(humanoid, true)
+
+    local distance = (savedPosition - hrp.Position).Magnitude
+    local time = distance / glideSpeed
+
+    local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(savedPosition)})
+    tween:Play()
+    tween.Completed:Wait()
+
+    blockControls(humanoid, false)
+    glideActive = false
+end)
+
+-- Forward Teleport 7 studs
+forwardBtn.MouseButton1Click:Connect(function()
+    local _, hrp = getChar()
+    local lookVector = hrp.CFrame.LookVector
+    hrp.CFrame = hrp.CFrame + lookVector * 7
+end)
